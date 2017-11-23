@@ -7,10 +7,7 @@ package io.codeclou.jenkins.githubwebhookbuildtriggerplugin;
 import hudson.EnvVars;
 import hudson.model.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /*
  * Inject Environment Variables into the triggered job
@@ -21,8 +18,8 @@ public class EnvironmentContributionAction implements EnvironmentContributingAct
     private transient String envVarInfo;
 
     public EnvironmentContributionAction(GithubWebhookPayload payload) {
-        String normalizedBranch = this.normalizeBranchNameOrEmptyString(payload.getRef());
-        String normalizedTag = this.normalizeTagNameOrEmptyString(payload.getRef());
+        String normalizedBranch = this.normalizeBranchNameOrEmptyString(payload);
+        String normalizedTag = this.normalizeTagNameOrEmptyString(payload);
         StringBuilder info = new StringBuilder();
         info.append("   ref\n      -> $GWBT_REF            : ").append(payload.getRef()).append("\n");
         info.append("      -> $GWBT_TAG            : ").append(normalizedTag).append("\n");
@@ -37,8 +34,10 @@ public class EnvironmentContributionAction implements EnvironmentContributingAct
         this.environmentVariables.put("GWBT_REF", payload.getRef());
         this.environmentVariables.put("GWBT_TAG", normalizedTag);
         this.environmentVariables.put("GWBT_BRANCH", normalizedBranch);
-        this.environmentVariables.put("GWBT_COMMIT_BEFORE", payload.getBefore());
-        this.environmentVariables.put("GWBT_COMMIT_AFTER", payload.getAfter());
+        Optional.ofNullable(payload.getBefore())
+            .ifPresent(commit -> this.environmentVariables.put("GWBT_COMMIT_BEFORE", commit));
+        Optional.ofNullable(payload.getAfter())
+            .ifPresent(commit -> this.environmentVariables.put("GWBT_COMMIT_AFTER", commit));
         this.environmentVariables.put("GWBT_REPO_CLONE_URL", payload.getRepository().getClone_url());
         this.environmentVariables.put("GWBT_REPO_HTML_URL", payload.getRepository().getHtml_url());
         this.environmentVariables.put("GWBT_REPO_FULL_NAME", payload.getRepository().getFull_name());
@@ -46,23 +45,31 @@ public class EnvironmentContributionAction implements EnvironmentContributingAct
     }
 
     /*
-     * converts "refs/heads/develop" to "develop"
-     */
-    private String normalizeBranchNameOrEmptyString(String branchname) {
-        if (branchname != null && branchname.startsWith("refs/heads/")) {
-            return branchname.replace("refs/heads/", "");
-        }
-        return "";
+    * converts "refs/heads/develop" to "develop"
+    */
+    private String normalizeBranchNameOrEmptyString(GithubWebhookPayload payload) {
+    //        if (branchname != null && branchname.startsWith("refs/heads/")) {
+    //            return branchname.replace("refs/heads/", "");
+    //        }
+    //        return "";
+    return Optional.ofNullable(payload)
+        .filter(hook -> hook.getRef_type().equals("branch"))
+        .map(GithubWebhookPayload::getRef)
+        .orElse("");
     }
 
     /*
-     * converts "refs/tags/1.0.0" to "1.0.0"
-     */
-    private String normalizeTagNameOrEmptyString(String tagname) {
-        if (tagname != null && tagname.startsWith("refs/tags/")) {
-            return tagname.replace("refs/tags/", "");
-        }
-        return "";
+    * converts "refs/tags/1.0.0" to "1.0.0"
+    */
+    private String normalizeTagNameOrEmptyString(GithubWebhookPayload payload) {
+    //        if (tagname != null && tagname.startsWith("refs/tags/")) {
+    //            return tagname.replace("refs/tags/", "");
+    //        }
+    //        return "";
+    return Optional.ofNullable(payload)
+        .filter(hook -> hook.getRef_type().equals("tag"))
+        .map(GithubWebhookPayload::getRef)
+        .orElse("");
     }
 
     protected String getEnvVarInfo() {
