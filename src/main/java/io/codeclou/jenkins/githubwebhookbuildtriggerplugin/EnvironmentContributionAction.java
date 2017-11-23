@@ -7,10 +7,7 @@ package io.codeclou.jenkins.githubwebhookbuildtriggerplugin;
 import hudson.EnvVars;
 import hudson.model.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /*
  * Inject Environment Variables into the triggered job
@@ -37,8 +34,10 @@ public class EnvironmentContributionAction implements EnvironmentContributingAct
         this.environmentVariables.put("GWBT_REF", payload.getRef());
         this.environmentVariables.put("GWBT_TAG", normalizedTag);
         this.environmentVariables.put("GWBT_BRANCH", normalizedBranch);
-        this.environmentVariables.put("GWBT_COMMIT_BEFORE", payload.getBefore());
-        this.environmentVariables.put("GWBT_COMMIT_AFTER", payload.getAfter());
+        Optional.ofNullable(payload.getBefore())
+            .ifPresent(commit -> this.environmentVariables.put("GWBT_COMMIT_BEFORE", commit));
+        Optional.ofNullable(payload.getAfter())
+            .ifPresent(commit -> this.environmentVariables.put("GWBT_COMMIT_AFTER", commit));
         this.environmentVariables.put("GWBT_REPO_CLONE_URL", payload.getRepository().getClone_url());
         this.environmentVariables.put("GWBT_REPO_HTML_URL", payload.getRepository().getHtml_url());
         this.environmentVariables.put("GWBT_REPO_FULL_NAME", payload.getRepository().getFull_name());
