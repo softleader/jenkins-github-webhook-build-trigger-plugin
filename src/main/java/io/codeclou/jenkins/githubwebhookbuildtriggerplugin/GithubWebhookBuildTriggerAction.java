@@ -26,11 +26,14 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Extension
 public class GithubWebhookBuildTriggerAction implements UnprotectedRootAction {
 
     private static final String URL_NAME = "github-webhook-build-trigger";
+    private static Pattern REGEX_JOBNAME = Pattern.compile(".+---/(.+)/.*");
 
     @Override
     public String getUrlName() {
@@ -118,7 +121,7 @@ public class GithubWebhookBuildTriggerAction implements UnprotectedRootAction {
                 jobsTriggered.append("      'Job' -> build, discover, read.\n");
             }
             for (Job job: jobs) {
-                if (job.getName().startsWith(jobNamePrefix) && ! jobsAlreadyTriggered.contains(job.getName())) {
+                if (matches(job, jobNamePrefix) && ! jobsAlreadyTriggered.contains(job.getName())) {
                     jobsAlreadyTriggered.add(job.getName());
                     if (job instanceof WorkflowJob) {
                         WorkflowJob wjob = (WorkflowJob) job;
@@ -151,6 +154,18 @@ public class GithubWebhookBuildTriggerAction implements UnprotectedRootAction {
         } catch (JsonSyntaxException ex) {
             return HttpResponses.error(500, this.getTextEnvelopedInBanner(info.toString() + "   ERROR: github webhook json invalid"));
         }
+    }
+
+    /**
+     * codeclou---/foo/ (regex jobname)
+     * codeclou---foo (not regex jobname)
+     */
+    private boolean matches(Job job, String jobNamePrefix) {
+        Matcher regexJobName = REGEX_JOBNAME.matcher(jobNamePrefix);
+        if (regexJobName.matches()) {
+          return Pattern.compile(regexJobName.group(1)).matcher(job.getName()).matches();
+        }
+        return job.getName().startsWith(jobNamePrefix);
     }
 
     /*
