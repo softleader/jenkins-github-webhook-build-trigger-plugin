@@ -99,7 +99,7 @@ public class GithubWebhookBuildTriggerAction implements UnprotectedRootAction {
             //
             // PAYLOAD TO ENVVARS
             //
-            EnvironmentContributionAction environmentContributionAction = new EnvironmentContributionAction(githubWebhookPayload);
+            EnvironmentContributionAction environmentContributionAction = new EnvironmentContributionAction(githubWebhookPayload, request.getQueryString());
 
             //
             // TRIGGER JOBS

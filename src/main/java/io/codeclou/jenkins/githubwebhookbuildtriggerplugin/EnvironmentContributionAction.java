@@ -8,6 +8,7 @@ import hudson.EnvVars;
 import hudson.model.*;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 /*
  * Inject Environment Variables into the triggered job
@@ -17,7 +18,7 @@ public class EnvironmentContributionAction implements EnvironmentContributingAct
     private transient Map<String, String> environmentVariables = new HashMap<>();
     private transient String envVarInfo;
 
-    public EnvironmentContributionAction(GithubWebhookPayload payload) {
+    public EnvironmentContributionAction(GithubWebhookPayload payload, String queryString) {
         String normalizedBranch = this.normalizeBranchNameOrEmptyString(payload);
         String normalizedTag = this.normalizeTagNameOrEmptyString(payload);
         StringBuilder info = new StringBuilder();
@@ -42,6 +43,12 @@ public class EnvironmentContributionAction implements EnvironmentContributingAct
         this.environmentVariables.put("GWBT_REPO_HTML_URL", payload.getRepository().getHtml_url());
         this.environmentVariables.put("GWBT_REPO_FULL_NAME", payload.getRepository().getFull_name());
         this.environmentVariables.put("GWBT_REPO_NAME", payload.getRepository().getName());
+
+        if (queryString != null) {
+            Stream.of(queryString.split("&"))
+                .map(p -> p.split("="))
+                .forEach(p -> this.environmentVariables.put(p[0], p[1]));
+        }
     }
 
     /*
