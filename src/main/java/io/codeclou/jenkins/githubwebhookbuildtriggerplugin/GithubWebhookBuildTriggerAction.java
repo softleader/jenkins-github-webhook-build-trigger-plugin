@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 public class GithubWebhookBuildTriggerAction implements UnprotectedRootAction {
 
     private static final String URL_NAME = "github-webhook-build-trigger";
-    private static Pattern REGEX_JOBNAME = Pattern.compile("/.+/---/.+/.*");
+    private static Pattern REGEX_JOBNAME = Pattern.compile("/(.+)/---/(.+)/.*");
 
     @Override
     public String getUrlName() {
@@ -156,16 +156,20 @@ public class GithubWebhookBuildTriggerAction implements UnprotectedRootAction {
         }
     }
 
-    /**
-     * /codeclou/---/foo/ (regex jobname)
-     * codeclou---foo (not regex jobname)
-     */
     private boolean matches(Job job, String repoFullName) {
-        Matcher regexJobName = REGEX_JOBNAME.matcher(job.getName());
+        return matchesRegexJobName(job, repoFullName) || job.getName().startsWith(repoFullName);
+    }
+
+    private boolean matchesRegexJobName(Job job, String repoFullName) {
+        Matcher regexJobName = REGEX_JOBNAME.matcher(job.getDescription());
         if (regexJobName.matches()) {
-          return Pattern.compile(job.getName()).matcher(repoFullName).matches();
+            String[] spited = repoFullName.split("---");
+            String owner = spited[0];
+            String repo = spited[1];
+            return Pattern.compile(regexJobName.group(1)).matcher(owner).matches()
+                    && Pattern.compile(regexJobName.group(2)).matcher(repo).matches();
         }
-        return job.getName().startsWith(repoFullName);
+        return false;
     }
 
     /*
